@@ -1,10 +1,11 @@
 import Image from "next/image";
-import { WalletConnectButton } from "./components/ConnectButton";
+
+import Header from "./components/Header";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <WalletConnectButton />
+    <div>
+      <Header />
     </div>
   );
 }
