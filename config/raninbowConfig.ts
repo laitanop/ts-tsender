@@ -1,10 +1,9 @@
-
-import { getDefaultConfig } from '@rainbow-me/rainbowkit';
-import { mainnet } from 'wagmi/chains';
+import { getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { anvil, zksync } from "wagmi/chains";
 
 export const config = getDefaultConfig({
-  appName: 'ts-sender',
-  projectId: 'YOUR_PROJECT_ID',
-  chains: [mainnet],
+  appName: "ts-sender",
+  projectId: process.env.NEXT_PUBLIC_PROJECT_ID || "",
+  chains: [anvil, zksync],
   ssr: false,
 });
