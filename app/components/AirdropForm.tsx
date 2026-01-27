@@ -2,22 +2,41 @@
 
 import React, { useState } from "react";
 import Input from "./common/input";
+import { useChainId, useConfig, useAccount } from "wagmi";
+import { chainsToTSender, tsenderAbi, erc20Abi } from "../constants";
+import { readContract } from "@wagmi/core";
 
 const AirdropForm = () => {
   const [tokenAddress, setTokenAddress] = useState("");
   const [recipientAddresses, setRecipientAddresses] = useState("");
   const [amount, setAmount] = useState("");
   const [notes, setNotes] = useState("");
+  const chainId = useChainId();
+  const config = useConfig();
+  const account = useAccount();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Handle form submission logic here
-    console.log({
-      tokenAddress,
-      recipientAddresses,
-      amount,
-      notes,
+  async function getApprovedAmount(tSenderAddress: string) {
+    if (!tSenderAddress) {
+      alert("Please connect your wallet");
+      return;
+    }
+    const result = await readContract(config, {
+      abi: erc20Abi,
+      address: tokenAddress as `0x${string}`,
+      functionName: "allowance",
+      args: [account.address, tSenderAddress as `0x${string}`],
     });
+    return result as number;
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const tsenderAddress = chainsToTSender[chainId].tsender;
+    console.log(tsenderAddress);
+    console.log(chainId);
+    const approvedAmount = await getApprovedAmount(tsenderAddress);
+    console.log(approvedAmount);
   };
 
   return (
