@@ -1,5 +1,34 @@
 "use client";
 
+/**
+ * TSender - ERC20 Token Airdrop Application
+ *
+ * This component provides a user-friendly interface for airdropping ERC20 tokens
+ * to multiple recipients in a single blockchain transaction. It handles:
+ *
+ * - Token approval workflow (if needed)
+ * - Form validation (addresses, amounts, format)
+ * - Transaction submission and confirmation
+ * - Real-time status updates with transaction hashes
+ * - Block explorer links for transaction verification
+ *
+ * Features:
+ * - Supports multiple EVM networks (Sepolia, Mainnet, Arbitrum, Optimism, Base, zkSync)
+ * - Automatic token approval detection
+ * - Comprehensive error handling and user feedback
+ * - Transaction hash display with block explorer links
+ *
+ * Usage:
+ * 1. Connect your Web3 wallet (MetaMask, etc.)
+ * 2. Enter the ERC20 token contract address
+ * 3. Add recipient addresses (comma or newline separated)
+ * 4. Add corresponding amounts (comma or newline separated)
+ * 5. Approve tokens (first time only)
+ * 6. Execute the airdrop transaction
+ *
+ * For testing on Sepolia, see README.md for test token addresses and faucets.
+ */
+
 import React, { useState, useEffect } from "react";
 import Input from "./common/input";
 import { useChainId, useConfig, useAccount, useWriteContract } from "wagmi";
@@ -18,6 +47,7 @@ const AirdropForm = () => {
   const [recipientAddresses, setRecipientAddresses] = useState("");
   const [amounts, setAmounts] = useState("");
   const [notes, setNotes] = useState("");
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
   const chainId = useChainId();
   const config = useConfig();
   const account = useAccount();
@@ -346,6 +376,153 @@ const AirdropForm = () => {
       <h2 className="text-2xl font-bold mb-6" style={{ color: "#5d2a42" }}>
         Create Airdrop
       </h2>
+
+      {/* Project Information Section - Collapsible Dropdown */}
+      <div className="mb-6 rounded-lg border border-blue-200 overflow-hidden shadow-sm">
+        <button
+          type="button"
+          onClick={() => setIsInfoOpen(!isInfoOpen)}
+          className="w-full px-5 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 transition-all duration-200 flex items-center justify-between group"
+          style={{ borderBottom: isInfoOpen ? "1px solid #bfdbfe" : "none" }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+              <svg
+                className={`w-5 h-5 transition-transform duration-300 ${
+                  isInfoOpen ? "rotate-180" : ""
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                style={{ color: "#5d2a42" }}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </div>
+            <div className="text-left">
+              <h3
+                className="text-lg font-semibold group-hover:opacity-80 transition-opacity"
+                style={{ color: "#5d2a42" }}
+              >
+                About TSender
+              </h3>
+              <p className="text-xs text-gray-600 mt-0.5">
+                Click to learn how it works
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+            {isInfoOpen ? "Hide" : "Show"}
+          </span>
+        </button>
+
+        <div
+          className={`overflow-hidden transition-all duration-300 ease-in-out ${
+            isInfoOpen ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
+          }`}
+        >
+          <div className="p-5 bg-white">
+            <p className="text-sm text-gray-700 mb-4 leading-relaxed">
+              TSender is a decentralized application for{" "}
+              <strong className="font-semibold" style={{ color: "#5d2a42" }}>
+                airdropping ERC20 tokens
+              </strong>{" "}
+              to multiple recipients in a single transaction. This saves gas
+              fees and time compared to sending tokens individually.
+            </p>
+
+            <div className="space-y-4">
+              <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                <h4
+                  className="font-semibold mb-3 text-sm"
+                  style={{ color: "#5d2a42" }}
+                >
+                  📋 How it works:
+                </h4>
+                <ol className="space-y-2 text-sm text-gray-700">
+                  <li className="flex items-start gap-2">
+                    <span className="font-semibold text-blue-600 min-w-[24px]">
+                      1.
+                    </span>
+                    <span>
+                      Enter the ERC20 token address you want to airdrop
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="font-semibold text-blue-600 min-w-[24px]">
+                      2.
+                    </span>
+                    <span>
+                      Add recipient addresses (separated by commas or new lines)
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="font-semibold text-blue-600 min-w-[24px]">
+                      3.
+                    </span>
+                    <span>Specify the amount for each recipient</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="font-semibold text-blue-600 min-w-[24px]">
+                      4.
+                    </span>
+                    <span>Approve token spending (first time only)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="font-semibold text-blue-600 min-w-[24px]">
+                      5.
+                    </span>
+                    <span>Execute the airdrop transaction</span>
+                  </li>
+                </ol>
+              </div>
+
+              <div className="bg-amber-50 rounded-lg p-4 border border-amber-100">
+                <h4
+                  className="font-semibold mb-3 text-sm"
+                  style={{ color: "#5d2a42" }}
+                >
+                  💡 Tips:
+                </h4>
+                <ul className="space-y-2 text-sm text-gray-700">
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-600 mt-1">•</span>
+                    <span>
+                      Make sure you have enough tokens and ETH for gas fees
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-600 mt-1">•</span>
+                    <span>
+                      The number of recipients must match the number of amounts
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-600 mt-1">•</span>
+                    <span>
+                      Amounts are in the token's smallest unit (check token
+                      decimals)
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-600 mt-1">•</span>
+                    <span>
+                      Test on Sepolia testnet first! See README for test token
+                      addresses
+                    </span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {message && (
         <div
           className={`mb-4 p-4 rounded-lg font-medium ${
