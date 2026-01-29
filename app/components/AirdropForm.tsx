@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import Input from "./common/input";
-import { useChainId, useConfig, useAccount } from "wagmi";
+import { useChainId, useConfig, useAccount, useWriteContract } from "wagmi";
 import { chainsToTSender, tsenderAbi, erc20Abi } from "../constants";
-import { readContract } from "@wagmi/core";
-import { calculateTotal } from "../utils/calculateTotal";
+import { readContract, waitForTransactionReceipt } from "@wagmi/core";
 
 const AirdropForm = () => {
   const [tokenAddress, setTokenAddress] = useState("");
@@ -15,30 +14,122 @@ const AirdropForm = () => {
   const chainId = useChainId();
   const config = useConfig();
   const account = useAccount();
-  const total: number = useMemo(() => calculateTotal(amounts), [amounts]);
+  const { writeContractAsync, isPending } = useWriteContract();
 
-  async function getApprovedAmount(tSenderAddress: string) {
-    if (!tSenderAddress) {
-      alert("Please connect your wallet");
-      return;
-    }
+  async function getTokenDecimals(): Promise<number> {
+    const result = await readContract(config, {
+      abi: erc20Abi,
+      address: tokenAddress as `0x${string}`,
+      functionName: "decimals",
+    });
+    return result as number;
+  }
+
+  async function getApprovedAmount(tSenderAddress: string): Promise<bigint> {
     const result = await readContract(config, {
       abi: erc20Abi,
       address: tokenAddress as `0x${string}`,
       functionName: "allowance",
       args: [account.address, tSenderAddress as `0x${string}`],
     });
-    return result as number;
+    return result as bigint;
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  function parseAmounts(amountsString: string, decimals: number): bigint[] {
+    return amountsString
+      .split(/[,\n]+/)
+      .map((amt) => amt.trim())
+      .filter((amt) => amt !== "")
+      .map((amt) => {
+        const parsed = parseFloat(amt);
+        // Handle decimals by multiplying first, then converting to BigInt
+        const scaled = Math.round(parsed * 10 ** decimals);
+        return BigInt(scaled);
+      });
+  }
+
+  function calculateTotalBigInt(amountsBigInt: bigint[]): bigint {
+    return amountsBigInt.reduce((sum, amt) => sum + amt, BigInt(0));
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const tsenderAddress = chainsToTSender[chainId].tsender;
-    console.log(tsenderAddress);
-    console.log(chainId);
-    const approvedAmount = await getApprovedAmount(tsenderAddress);
-    console.log(approvedAmount);
+    if (!account.address) {
+      alert("Please connect your wallet");
+      return;
+    }
+
+    if (!tokenAddress) {
+      alert("Please enter a token address");
+      return;
+    }
+
+    const tsenderAddress = chainsToTSender[chainId]?.tsender;
+    if (!tsenderAddress) {
+      alert("TSender not available on this network");
+      return;
+    }
+
+    try {
+      // Fetch token decimals
+      const decimals = await getTokenDecimals();
+      console.log("Token decimals:", decimals);
+
+      // Parse amounts with proper decimal handling
+      const amountsBigInt = parseAmounts(amounts, decimals);
+      const totalBigInt = calculateTotalBigInt(amountsBigInt);
+      console.log("Amounts (with decimals):", amountsBigInt);
+      console.log("Total (with decimals):", totalBigInt);
+
+      // Parse recipient addresses
+      const recipients = recipientAddresses
+        .split(/[,\n]+/)
+        .map((addr) => addr.trim())
+        .filter((addr) => addr !== "");
+
+      if (recipients.length !== amountsBigInt.length) {
+        alert(
+          `Mismatch: ${recipients.length} recipients but ${amountsBigInt.length} amounts`
+        );
+        return;
+      }
+
+      // Check current allowance
+      const approvedAmount = await getApprovedAmount(tsenderAddress);
+      console.log("Approved amount:", approvedAmount, "Total needed:", totalBigInt);
+
+      // Approve if needed
+      if (approvedAmount < totalBigInt) {
+        console.log("Approving tokens...");
+        const approvalHash = await writeContractAsync({
+          abi: erc20Abi,
+          address: tokenAddress as `0x${string}`,
+          functionName: "approve",
+          args: [tsenderAddress as `0x${string}`, totalBigInt],
+        });
+
+        // Wait for approval to be confirmed
+        const approvalReceipt = await waitForTransactionReceipt(config, {
+          hash: approvalHash,
+        });
+        console.log("Approval confirmed:", approvalReceipt);
+      }
+
+      // Execute airdrop
+      console.log("Executing airdrop...");
+      await writeContractAsync({
+        abi: tsenderAbi,
+        address: tsenderAddress as `0x${string}`,
+        functionName: "airdropERC20",
+        args: [tokenAddress, recipients, amountsBigInt, totalBigInt],
+      });
+
+      console.log("Airdrop successful!");
+    } catch (err) {
+      console.error("Airdrop failed:", err);
+      alert(`Transaction failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+    }
   };
 
   return (
@@ -87,12 +178,13 @@ const AirdropForm = () => {
 
         <button
           type="submit"
-          className="w-full py-3 px-6 rounded-lg font-semibold text-white transition-all duration-200 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2"
+          disabled={isPending}
+          className="w-full py-3 px-6 rounded-lg font-semibold text-white transition-all duration-200 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
             backgroundColor: "#fb6376",
           }}
         >
-          Create Airdrop
+          {isPending ? "Processing..." : "Create Airdrop"}
         </button>
       </div>
     </form>

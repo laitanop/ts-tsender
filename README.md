@@ -35,8 +35,6 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
-
-
 # TSenderReference
 
 A simple reference contract for **airdropping ERC20 tokens** to multiple recipients in a single transaction.  
@@ -48,7 +46,7 @@ Designed to be called from a frontend (UI) after the user approves token spendin
 
 **Contract:** `TSenderReference`  
 **Solidity Version:** `0.8.24`  
-**License:** MIT  
+**License:** MIT
 
 This contract allows a sender to distribute ERC20 tokens to many recipients at once.  
 It also provides a helper function to validate recipient and amount lists before submitting a transaction.
@@ -70,3 +68,5 @@ function airdropERC20(
     uint256[] calldata amounts,
     uint256 totalAmount
 ) external
+
+```
