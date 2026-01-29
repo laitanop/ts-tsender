@@ -1,12 +1,5 @@
-import Image from "next/image";
-
-import Header from "./components/Header";
-import AirdropForm from "./components/AirdropForm";
+import LandingPage from "./components/LandingPage";
 
 export default function Home() {
-  return (
-    <div>
-      <AirdropForm />
-    </div>
-  );
+  return <LandingPage />;
 }
